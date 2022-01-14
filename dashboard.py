@@ -1,36 +1,26 @@
-import dash
-from dash import dcc
-from dash import html
-#import dash_core_components as dcc
-#import dash_html_components as html
+## Imports
 import pandas as pd
-import plotly.express as px
-from dash.dependencies import Input, Output# Load Data
-
+import numpy as np
 import json
 
-import numpy as np
-
-import dash
-import dash_table as dt
-from dash import html
-from dash import dcc
-import plotly.graph_objects as go
-import pandas as pd
-
-
 from sklearn.metrics import mean_absolute_percentage_error
+
+import plotly.express as px
+import plotly.graph_objects as go
 import plotly.figure_factory as ff
 
+import dash
+from dash import dcc
+from dash import html
+import dash_table as dt
+from dash.dependencies import Input, Output# Load Data
 
-# figure out the index thing
-#df = pd.read_csv('dataframe_to_visualize.csv', index_col=0, parse_dates=True)
-df = pd.read_csv('dataframe_to_visualize_subset.csv', index_col=0, parse_dates=True)
-#df = pd.read_csv('dataframe_to_visualize.csv', index_col=0, parse_dates=True)
+# Read in the data
+#df = pd.read_csv('dataframe_to_visualize_subset.csv', index_col=0, parse_dates=True)
+df = pd.read_csv('dataframe_to_visualize.csv', index_col=0, parse_dates=True)
 print(f"Read in dataframe with shape {df.shape}")
 
 # Add final data processing
-
 
 ## Add a dummy key, so plotly can reference:
 df['dummyKey'] = range(len(df))
@@ -52,7 +42,6 @@ df['Event'] = df['Event'].fillna('Unknown')
 df['Equipment'] = df['Equipment'].fillna('Unknown')
 df['ParentFederation'] = df['ParentFederation'].fillna('Unknown')
 df['Sex'] = df['Sex'].fillna('Unknown')
-print(df)
 
 
 # Initialize the app
@@ -67,73 +56,55 @@ def get_options(vals):
 		dict_list.append({'label': str(i), 'value': str(i)})
 	return(dict_list)
 
-# Helping myself debugging
-print(df.columns)
-
-
 # Initialize dropdowns to all values, before callback is called first time.
 ## Enables selective filtering
-continent_options_all = get_options(df['Continent'].unique())
-country_options_all = get_options(df['Country'].unique())
-event_options_all = get_options(df['Event'].unique())
-equipment_options_all = get_options(df['Equipment'].unique())
+continent_options_all         = get_options(df['Continent'].unique())
+country_options_all           = get_options(df['Country'].unique())
+event_options_all             = get_options(df['Event'].unique())
+equipment_options_all         = get_options(df['Equipment'].unique())
 parent_federation_options_all = get_options(df['ParentFederation'].unique())
-valid_res_options_all = get_options(df['Valid_Results'].unique())
-sex_options_all = get_options(df['Sex'].unique())
+valid_res_options_all         = get_options(df['Valid_Results'].unique())
+sex_options_all               = get_options(df['Sex'].unique())
 
-continent_options = continent_options_all
-country_options = country_options_all
-event_options = event_options_all
-equipment_options = equipment_options_all
+continent_options         = continent_options_all
+country_options           = country_options_all
+event_options             = event_options_all
+equipment_options         = equipment_options_all
 parent_federation_options = parent_federation_options_all
-valid_res_options = valid_res_options_all
-sex_options = sex_options_all 
-
-print(valid_res_options)
+valid_res_options         = valid_res_options_all
+sex_options               = sex_options_all 
 
 print("Generated dropdown options")
 
-
+# Headers used for exploratory tables
 tableColumns = ['Name', 'Country', 'Sex', 'Age', 'BodyweightKg', 'Date', 'Best3SquatKg','Best3BenchKg', 'Best3DeadliftKg', 'TotalKg', 'Wilks','Mean height', 'predicted']
 tableColumns = ['Name', 'Country', 'Sex', 'Age', 'BodyweightKg', 'predicted', 'TotalKg', 'Mean height']
 
+# Prettify printing (Don't think this worked)
 pd.options.display.float_format = '${:.2f}'.format
-#df['predicted']=tableColumns['predicted'].map('{:,.2f}%'.format)
 
-#Index(['Name', 'Continent', 'Country', 'Sex', 'Age', 'BodyweightKg',
-#       'Valid_Results', 'Date', 'Event', 'Equipment', 'Best3SquatKg',
-#       'Best3BenchKg', 'Best3DeadliftKg', 'TotalKg', 'Dots', 'Wilks',
-#       'Glossbrenner', 'Goodlift', 'Mean height', 'ParentFederation',
-#       'predicted', 'dummyKey', 'CompetitionYear'],
-#      dtype='object')
-
-
-
+# Get ranges for sliders
 date_min = df['Date'].min()
 date_max = df['Date'].max()
-print(date_min, date_max)
 
 bodyweight_min = df['BodyweightKg'].min()
 bodyweight_max = df['BodyweightKg'].max()
-#print(bodyweight_min, bodyweight_max)
-#bodyweight_list = df['BodyweightKg'].unique()
 
 height_min = df['Mean height'].min()
 height_max = df['Mean height'].max()
 
 print("Generated slider options")
 
+# Generate extra options
 drilldownfilter_options = get_options(['No', 'Yes'])
-axis_options_kde = get_options([
-'BodyweightKg', 'Mean height', 'TotalKg', 'Dots', 'Wilks', 'Age', 'Best3SquatKg', 'Best3BenchKg', 'Best3DeadliftKg', 'Glossbrenner', 'Goodlift', 'predicted', 'CompetitionYear'])
+
+# Options for KDE plot is handled separately, as they don't get updated
+axis_options_kde = get_options(['BodyweightKg', 'Mean height', 'TotalKg', 'Dots', 'Wilks', 'Age', 'Best3SquatKg', 'Best3BenchKg', 'Best3DeadliftKg', 'Glossbrenner', 'Goodlift', 'predicted', 'CompetitionYear'])
 grouping_options_kde = get_options(['Sex', 'Continent', 'ParentFederation', 'Equipment', 'Country', 'Event'])
 
-
-
-
-
+# Define layout of the page 
 app.layout = html.Div(
-    children=[
+    children = [
         html.Div(className='row',
                  children=[
                  html.H1("Powerlifting Results, Total, Weight, (and height)", style={'background-color': '#333333'}),
@@ -180,7 +151,6 @@ app.layout = html.Div(
 				                             html.Div(id='rowFoundDiv', className='h3-for-filter'),
 			                             ]),
 
-                                     	
 
                                      	html.Div(children=[
 	                                     	html.Div(
@@ -190,7 +160,7 @@ app.layout = html.Div(
 			                                         			, options=continent_options
 			                                         			, multi=True
 			                                                    #, value=continent_options[0].get('value')
-			                                                    , style={'backgroundColor': '#1E1E1E'}
+			                                                    , style={'backgroundColor': '#1E1E00'}
 			                                                    , className='dropDownSelector'
 			                                                      ),
 				                             	], style={'width':'49%', 'display':'inline-block', 'vertical-align': 'top'}
@@ -270,7 +240,6 @@ app.layout = html.Div(
 																	#marks={i: str(i) for i in bodyweight_list},
 																	included=True,
 																	allowCross=False,
-																	#marks=[str(bodyweight_min), str(bodyweight_max)],
 																	value=[bodyweight_min, bodyweight_max],
 																	),
 			                                         #html.Div(id='WeightSliderRange'),
@@ -283,18 +252,14 @@ app.layout = html.Div(
 																	min=height_min,
 																	max=height_max,
 																	step=1,
-																	#marks={i: str(i) for i in bodyweight_list},
 																	included=True,
 																	allowCross=False,
-																	#marks=[str(bodyweight_min), str(bodyweight_max)],
 																	value=[height_min, height_max],
 																	),
 			                                         #html.Div(id='HeightSliderRange')
 				                             	], style={'width':'49%', 'display':'inline-block', 'vertical-align': 'top'}), 
 			                             ]),
 
-                                         
-                                         
                                          #######################################################
                                          #######################################################
                                          html.Div(children=[
@@ -338,7 +303,6 @@ app.layout = html.Div(
 			                             ]
 			                            )
 								, dcc.Graph(id='fig3Div', config={'displayModeBar': True}, animate=True)
-                                         
                                          #######################################################
                                          #html.H3("Year:", className='h3-for-filter'),
                                          #html.H3("Age:", className='h3-for-filter'),
@@ -389,7 +353,6 @@ app.layout = html.Div(
 								        , style={'width':'32%', 'padding':'0px', 'margin':'0px', 'padding-top':'5px', 'padding-bottom':'5px'}
 								        ),
                                  dcc.Graph(id='timeseries2', config={'displayModeBar': True}, animate=True),
-
                              ]
                              ),
                     html.Div(className='three columns div-for-charts2 bg-grey',
@@ -456,10 +419,11 @@ def display_hover_data(hoverData):
 # When selecting points on the scatterplot, (brushing), I'm linking to predictions plot
 ## Also showing table of selected data
 @app.callback(
-	[Output("selected-data", "data"),
-	 Output('modelPredictionsGraph', 'figure'),
-	 Output('mapeDiv', 'children')],
-	Input('timeseries', 'selectedData'))
+	[Output("selected-data", "data")
+	, Output('modelPredictionsGraph', 'figure')
+	, Output('mapeDiv', 'children')]
+	, Input('timeseries', 'selectedData')
+)
 def display_selected_data(selectedData):
 	#Only return if anything is selected
 	if selectedData is not None:
@@ -478,127 +442,40 @@ def display_selected_data(selectedData):
 		mape = mean_absolute_percentage_error(df_selected.BodyweightKg, df_selected.predicted)
 		mapeString = "MAPE= {:.0%}".format(mape)
 
-		df_corr = df_selected.corr()
-		print(df_corr)
-
-		mask = np.triu(np.ones_like(df_corr, dtype=bool))
-		df_mask = df_corr.mask(mask)
-
-		figure = ff.create_annotated_heatmap(z=df_mask.to_numpy(), 
-                                  x=df_mask.columns.tolist(),
-                                  y=df_mask.columns.tolist(),
-                                  colorscale=px.colors.diverging.RdBu,
-                                  hoverinfo="none", #Shows hoverinfo for null values
-                                  showscale=True, ygap=1, xgap=1
-                                 )
-
-		figure.update_xaxes(side="bottom")
-
-		figure.update_layout(
-		    title_text='Heatmap', 
-		    title_x=0.5, 
-		    width=1000, 
-		    height=1000,
-		    xaxis_showgrid=False,
-		    yaxis_showgrid=False,
-		    xaxis_zeroline=False,
-		    yaxis_zeroline=False,
-		    yaxis_autorange='reversed',
-		    template='plotly_white'
-		)
-
-
-
-
-		# (Re)generate the plot
-		#figure = px.scatter(
-		#	df_selected
-		#	, x="BodyweightKg"
-		#	, y=["predicted"]
-		#	, color="Sex"
-		#	, custom_data = ['dummyKey']
-		#	, trendline="ols"
-		#	, title="Model - Weight vs predicted"
-		#)
-
-		figure = go.Heatmap(
-			z=df_corr.values,#to_numpy(),
-			x=df_corr.index.values,#columns.tolist(),
-			y=df_corr.columns.values)#index.tolist(),
-			#zmax=1, zmin=-1,
-			#showscale=True,
-			#hoverongaps=True
-		#)
-
-		fig = ff.create_annotated_heatmap(z=df_corr.to_numpy(), 
-										x=df_corr.columns.tolist(),
-										y=df_corr.columns.tolist(),
-										colorscale=px.colors.diverging.RdBu,
-										hoverinfo="none", #Shows hoverinfo for null values
-										showscale=True, ygap=1, xgap=1
-										)
-
-		fig.update_xaxes(side="bottom")
-
-		fig.update_layout(
-			title_text='Heatmap', 
-			title_x=0.5, 
-			#width=1000, 
-			#height=1000,
-			xaxis_showgrid=False,
-			yaxis_showgrid=False,
-			xaxis_zeroline=False,
-			yaxis_zeroline=False,
-			yaxis_autorange='reversed',
-			template='plotly_white'
-		)
-
-# NaN values are not handled automatically and are displayed in the figure
-# So we need to get rid of the text manually
-		for i in range(len(fig.layout.annotations)):
-			if fig.layout.annotations[i].text == 'nan':
-				fig.layout.annotations[i].text = ""
-
-
-		fig = px.scatter_3d(df_selected, x='BodyweightKg', y='Mean height', z='TotalKg',
-				color='Sex', symbol='Sex')
-
-
-		# Update layout
-		fig.update_layout({
-			'plot_bgcolor': '#161616',
-			'paper_bgcolor': '#161616',
-			'template':'plotly_dark'
-		})
-
-		#draw a square
-		x = [0, 1, 0, 1, 0, 1, 0, 1]
-		y = [0, 1, 1, 0, 0, 1, 1, 0]
-		z = [0, 0, 0, 0, 1, 1, 1, 1]
-
-		x = df_selected['Mean height'].values
+		# Restructure data for 3D plotting - Needs some work as I want each plot (predicted vs actual) separted
+		## Define values
+		x  = df_selected['Mean height'].values
 		y1 = df_selected['BodyweightKg'].values
 		y2 = df_selected['predicted'].values
-		z = df_selected['TotalKg'].values
-		print(y1)
+		z  = df_selected['TotalKg'].values
 
-		#the start and end point for each line
-		pairs = [(0,6), (1,7)]
-
-		trace1 = go.Scatter3d(
-			x=x,
-			y=y1,
-			z=z,
-			mode='markers',
-			marker=dict(color="blue"),
-			name='BW (True)'#, 			color="red"
+		# Create trace for Actual
+		trace1 = go.Scatter3d(x = x
+							, y = y1
+							, z = z
+							, mode = 'markers'
+							, marker = dict(color="blue")
+							, name = 'BW (True)'
 		)
 		
+		# Create trace for predicted
+		trace2 = go.Scatter3d(x = x
+							, y = y2
+							, z = z
+							, mode = 'markers'
+							, marker = dict(color="red")
+							, name = 'BW (Pred)'
+		)
 
+		# Link the points with lines, for easier exploration where each prediction went
+
+		# List of points
 		x_lines = list()
 		y_lines = list()
 		z_lines = list()
 
+		# Concatenate both 
+		## Each point gets [from, to, None], where "None" ensures that they don't get connected into a snake
 		for i in range(len(x)):
 			x_lines.append(x[i])
 			x_lines.append(x[i])
@@ -610,66 +487,60 @@ def display_selected_data(selectedData):
 			y_lines.append(None)
 			z_lines.append(None)
 
-		trace2 = go.Scatter3d(
-			x=x,
-			y=y2,
-			z=z,
-			mode='markers',
-			marker=dict(color="red"),
-			name='BW (Pred)'#, 			color="red"
+		# Trace the lines generated
+		trace3 = go.Scatter3d(x = x_lines
+							, y = y_lines
+							, z = z_lines
+							, mode = 'lines'
+							, name = ""
 		)
 
-		trace3 = go.Scatter3d(
-			x=x_lines,
-			y=y_lines,
-			z=z_lines,
-			mode='lines',
-			name=""
+		# Create figure from the three traces
+		fig = go.Figure(data = [trace1, trace2, trace3])
+
+		# update legend
+		fig.update_layout(legend = dict(orientation = "h"
+									, yanchor = "bottom"
+									, y = 1.02
+									, xanchor = "right"
+									, x = 1
+									)
 		)
 
-		fig = go.Figure(data=[trace1, trace2, trace3])
+		# update axis
+		fig.update_layout(scene = dict(xaxis = dict(title_text='Mean height (cm)')
+									,  yaxis = dict(title_text='Bodywieght (kg)')
+									,  zaxis = dict(title_text='Total (kg)')
+									)
+		)
 
-		fig.update_layout(legend=dict(
-		orientation="h",
-		yanchor="bottom",
-		y=1.02,
-		xanchor="right",
-		x=1
-		))
-
-		fig.update_layout(scene=dict(xaxis=dict(title_text='Mean height (cm)'),
-									yaxis=dict(title_text='Bodywieght (kg)'),
-									zaxis=dict(title_text='Total (kg)'),
-			))
-
-	
-
-		print("I did create something")
-
-				# Update layout
-		fig.update_layout({
-			'plot_bgcolor': '#161616',
-			'paper_bgcolor': '#161616',
-			'template':'plotly_dark'
-		})
-
-		#https://stackoverflow.com/questions/42301481/adding-specific-lines-to-a-plotly-scatter3d-plot
-
-		# Default option
-		#figure.update_layout(
-			#dragmode='select',
-		#)
-
-		# Ensure a square plot
-		#axis_min = min(df_selected.BodyweightKg.min(), df_selected.predicted.min()) * 0.95
-		#axis_max = min(df_selected.BodyweightKg.max(), df_selected.predicted.max()) * 1.05
-		#figure.update_xaxes(range=[axis_min, axis_max])
-		#figure.update_yaxes(range=[axis_min, axis_max])
+		# Update layout
+		fig.update_layout({'plot_bgcolor': '#161616'
+						,  'paper_bgcolor': '#161616'
+						,  'template': 'plotly_dark'
+						}
+		)
 
 		# Over and out
-		return df_selected.to_dict('records'), fig, mapeString
-
-
+		d = df_selected.to_dict('records')
+	
+	#If no point is selected, remove all
+	else: 
+		d = df.head(0).to_dict('records')
+		fig = go.Figure().add_annotation( x = 2
+										, y = 2
+										, text = "No Data to Display"
+										, font = dict(family="sans serif"
+													, size=25
+													, color="crimson"
+												)
+										, showarrow = False
+										, yshift = 10
+		)
+		mapeString = "Nothing Selected"
+	# Return stuff
+	return d, fig, mapeString
+	
 # "Main" callback
 # Update whenever filters are modified
 ## Outputs three plots, as well as optionally drill down of filters
@@ -715,7 +586,6 @@ def update_output(drillDownFilterSelector
 				, yAxisSelectorKDE
 				, colorGroupingKDE
 				):
-	print("Calling callback")
 
 	# Cleanse parameters:
 	## If initialized with single value, it is a string
@@ -806,91 +676,82 @@ def update_output(drillDownFilterSelector
 	# Refilter filters
 	## If drilldown is enabled, we need to find new values to select
 	if drillDownFilterSelector == 'No':
-		continent_options = continent_options_all
-		country_options = country_options_all
-		event_options = event_options_all
-		equipment_options = equipment_options_all
+		continent_options         = continent_options_all
+		country_options           = country_options_all
+		event_options             = event_options_all
+		equipment_options         = equipment_options_all
 		parent_federation_options = parent_federation_options_all
-		valid_res_options = valid_res_options_all
-		sex_options = sex_options_all
+		valid_res_options         = valid_res_options_all
+		sex_options               = sex_options_all
 	else:
-		country_options = get_options(df_filtered['Country'].unique())
-		continent_options = get_options(df_filtered['Continent'].unique())
-		country_options = get_options(df_filtered['Country'].unique())
-		event_options = get_options(df_filtered['Event'].unique())
-		equipment_options = get_options(df_filtered['Equipment'].unique())
+		country_options           = get_options(df_filtered['Country'].unique())
+		continent_options         = get_options(df_filtered['Continent'].unique())
+		country_options           = get_options(df_filtered['Country'].unique())
+		event_options             = get_options(df_filtered['Event'].unique())
+		equipment_options         = get_options(df_filtered['Equipment'].unique())
 		parent_federation_options = get_options(df_filtered['ParentFederation'].unique())
-		valid_res_options = get_options(df_filtered['Valid_Results'].unique())
-		sex_options = get_options(df_filtered['Sex'].unique())
+		valid_res_options         = get_options(df_filtered['Valid_Results'].unique())
+		sex_options               = get_options(df_filtered['Sex'].unique())
 
 	# Create the plots	
 
 	## Standard scatterplot
-	figure = px.scatter(
-        df_filtered
-        , x="BodyweightKg"
-        , y="TotalKg"
-        , color="Continent"
-        # Append key for filtering
-        , custom_data = ['dummyKey']
-        , title="Continent"
+	figure = px.scatter(  df_filtered
+						, x="BodyweightKg"
+        				, y="TotalKg"
+        				, color="Continent"
+        				# Append key for filtering
+        				, custom_data = ['dummyKey']
+        				, title="Continent"
     )
 
 	## Update layout
-	figure.update_layout({
-		'plot_bgcolor': '#161616',
-		'paper_bgcolor': '#161616',
-		'template':'plotly_dark'
-	})
+	figure.update_layout({'plot_bgcolor': '#161616'
+						, 'paper_bgcolor': '#161616'
+						, 'template':'plotly_dark'
+						}
+	)
 
     ## Default action
-	figure.update_layout(
-		dragmode='select',
-	)
+	figure.update_layout(dragmode='select')
 
 	# KDE Plot - based on selectors
-	figure3 = px.density_contour(
-        df_filtered
-        , x=xAxisSelectorKDE
-        , y=yAxisSelectorKDE
-        , color=colorGroupingKDE
-        , title="Distribution stuff"
-        , marginal_x="histogram"
-		, marginal_y="histogram"
+	figure3 = px.density_contour( df_filtered
+						        , x=xAxisSelectorKDE
+						        , y=yAxisSelectorKDE
+						        , color=colorGroupingKDE
+						        , title="Distribution stuff"
+						        , marginal_x="histogram"
+								, marginal_y="histogram"
     )
 
 	## Update layout
-	figure3.update_layout({
-		'plot_bgcolor': '#161616',
-		'paper_bgcolor': '#161616',
-		'template':'plotly_dark'
-	})
-    ## Default action
-	figure3.update_layout(
-		dragmode='select',
+	figure3.update_layout({'plot_bgcolor': '#161616'
+						,  'paper_bgcolor': '#161616'
+						,  'template':'plotly_dark'
+						}
 	)
+    ## Default action
+	figure3.update_layout(dragmode='select')
 
 	# Do aggregation
 	df_grouped = df_filtered.groupby(['CompetitionYear'], as_index = False)[['Best3SquatKg', 'Best3BenchKg', 'Best3DeadliftKg']].mean()
 	
 	# Show timeline
-	figure2 = px.area(
-        df_grouped
-        , x="CompetitionYear"
-        , y=["Best3SquatKg", "Best3BenchKg", "Best3DeadliftKg"]
-        , title="Average score over time"
+	figure2 = px.area(df_grouped
+        			, x="CompetitionYear"
+        			, y=["Best3SquatKg", "Best3BenchKg", "Best3DeadliftKg"]
+        			, title="Average score over time"
 	)
 	
 	## Update layout
-	figure2.update_layout({
-		'plot_bgcolor': '#161616',
-		'paper_bgcolor': '#161616',
-		'template':'plotly_dark'
-		})
-	## Default action
-	figure2.update_layout(
-		dragmode='select',
+	figure2.update_layout({'plot_bgcolor': '#161616'
+						,  'paper_bgcolor': '#161616'
+						,  'template':'plotly_dark'
+						}
 	)
+	## Default action
+	figure2.update_layout(dragmode='select')
 
 	# Generate counter text in the filters
 	if rowsFound > nSamplesTotal:
